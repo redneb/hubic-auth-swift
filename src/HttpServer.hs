@@ -76,9 +76,9 @@ runHttpServer opts = do
                     Nothing -> errorIO "Could not find registration data"
             refresh_token <- liftIO $ getRefreshToken man
                 client_id client_secret code redirect_uri
-            let muCtx "user" = MuVariable $ T.decodeLatin1 client_id
-                muCtx "key" = MuVariable $ T.decodeLatin1 $
-                    mconcat [client_secret, ":", refresh_token]
+            let muCtx "user" = MuVariable $ T.decodeLatin1 $
+                    mconcat [client_id, ":", client_secret]
+                muCtx "key" = MuVariable $ T.decodeLatin1 refresh_token
                 muCtx "auth_uri" = MuVariable $ T.decodeLatin1 $
                     mconcat [redirect_uri, "auth/v1.0"]
                 muCtx s = error $ "unknown parameter: " ++ s
@@ -126,11 +126,11 @@ runHttpServer opts = do
 
 handleAuth :: Manager -> TVar Cache -> Int -> ActionM ()
 handleAuth man cache cacheTTL = do
-    client_id <- headerBS "X-Auth-User"
-    key <- headerBS "X-Auth-Key"
-    let (client_secret, refresh_token0) = C8.break (== ':') key
-    when (C8.null refresh_token0) $ error "Invalid password format"
-    let refresh_token = C8.drop 1 refresh_token0
+    user <- headerBS "X-Auth-User"
+    refresh_token <- headerBS "X-Auth-Key"
+    let (client_id, client_secret0) = C8.break (== ':') user
+    when (C8.null client_secret0) $ error "Invalid username format"
+    let client_secret = C8.drop 1 client_secret0
     let triplet = (client_id, client_secret, refresh_token)
     r <- liftIO $ atomically $ do
         cacheV <- readTVar cache
