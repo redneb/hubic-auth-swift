@@ -3,7 +3,7 @@ version:             0.1.0.0
 synopsis:            Swift v1 authentication for hubiC
 -- description:         
 homepage:            https://github.com/redneb/hubic-auth-swift
-license:             GPL-3
+license:             AGPL-3
 license-file:        LICENSE
 author:              Marios Titas <rednebΑΤgmxDΟΤcom>
 maintainer:          Marios Titas <rednebΑΤgmxDΟΤcom>
