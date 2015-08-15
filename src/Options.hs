@@ -14,6 +14,7 @@ import Control.DeepSeq (NFData)
 data Options = Options
     { optHelp :: Bool
     , optPort :: Int
+    , optAddr :: String
     }
   deriving (Generic)
 
@@ -23,6 +24,7 @@ defaultOptions :: Options
 defaultOptions = Options
     { optHelp = False
     , optPort = 8080
+    , optAddr = "*"
     }
 
 optDescrs :: [OptDescr (Options -> Options)]
@@ -32,6 +34,11 @@ optDescrs =
              (ReqArg (\s opts -> opts {optPort = parsePort s}) "NUM")
              ("port to listen on (default: "
                 ++ show (optPort defaultOptions) ++ ")")
+    , Option "a"
+             ["address"]
+             (ReqArg (\s opts -> opts {optAddr = s}) "HOST")
+             ("address to listen on (default: "
+                ++ optAddr defaultOptions ++ ")")
     , Option "h"
              ["help"]
              (NoArg $ \opts -> opts {optHelp = True})

@@ -6,7 +6,7 @@ module HttpServer
     ( runHttpServer
     ) where
 
-import Network.Wai.Handler.Warp (defaultSettings, setPort)
+import Network.Wai.Handler.Warp (defaultSettings, setPort, setHost)
 import Network.Wai (modifyResponse, mapResponseHeaders)
 import Web.Scotty hiding (Options)
 import Network.HTTP.Client (Manager, newManager)
@@ -33,6 +33,7 @@ import Data.Default.Class
 import System.Random (randomIO)
 import Paths_hubic_auth_swift (version)
 import Data.Version (showVersion)
+import Data.String
 import Data.Monoid ((<>))
 #if !MIN_VERSION_base(4,8,0)
 import Data.Word (Word)
@@ -53,7 +54,8 @@ runHttpServer opts = do
     man <- newManager tlsManagerSettings
     cache <- newTVarIO mempty
     registrations <- newTVarIO (mempty :: Registrations)
-    let warpSettings = setPort (optPort opts) defaultSettings
+    let warpSettings = setHost (fromString $ optAddr opts) $
+            setPort (optPort opts) defaultSettings
     scottyOpts def {verbose = 0, settings = warpSettings} $ do
         middleware $ modifyResponse $ mapResponseHeaders $ \hdrs ->
             serverHdr : filter ((/= "Server") . fst) hdrs
