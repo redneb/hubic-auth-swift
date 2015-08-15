@@ -1,7 +1,9 @@
 name:                hubic-auth-swift
 version:             0.0.0
 synopsis:            Swift v1 authentication for hubiC
--- description:         
+description:         
+  Enable OpenStack Swift clients to access files from a hubiC account
+  using the standard Swift v1 authentication method.
 homepage:            https://github.com/redneb/hubic-auth-swift
 license:             AGPL-3
 license-file:        LICENSE
