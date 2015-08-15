@@ -59,8 +59,8 @@ runHttpServer opts = do
     scottyOpts def {verbose = 0, settings = warpSettings} $ do
         middleware $ modifyResponse $ mapResponseHeaders $ \hdrs ->
             serverHdr : filter ((/= "Server") . fst) hdrs
-        get "/v1.0"      $ handleAuth man cache
-        get "/auth/v1.0" $ handleAuth man cache
+        get "/v1.0"      $ handleAuth man cache (optCacheTTL opts)
+        get "/auth/v1.0" $ handleAuth man cache (optCacheTTL opts)
         get "/" $ do
             code  <- param "code" `rescue` const next
             sessionId <- do
@@ -122,8 +122,8 @@ runHttpServer opts = do
     serverHdr =
         ("Server", "hubic-auth-swift/" <> C8.pack (showVersion version))
 
-handleAuth :: Manager -> TVar Cache -> ActionM ()
-handleAuth man cache = do
+handleAuth :: Manager -> TVar Cache -> Int -> ActionM ()
+handleAuth man cache cacheTTL = do
     client_id <- headerBS "X-Auth-User"
     key <- headerBS "X-Auth-Key"
     let (client_secret, refresh_token0) = C8.break (== ':') key
@@ -148,7 +148,7 @@ handleAuth man cache = do
                         getEndpoint man client_id client_secret refresh_token
                     atomically $ modifyTVar cache $
                         Map.insert triplet $ Just (token, endpoint)
-                    let expires_in' = min 1800000000 $ max 0 $
+                    let expires_in' = min cacheTTL $ max 0 $
                                         expires_in - 60000000
                     void $ forkFinally
                         (threadDelay expires_in')
