@@ -23,7 +23,7 @@ main = do
             exitFailure
         | optHelp opts -> do
             progName <- getProgName
-            let usage1 = "Usage: " ++ progName ++ " [-p NUM]\n"
+            let usage1 = "Usage: " ++ progName ++ " [OPTION]...\n"
             putStr $ usageInfo usage1 optDescrs
         | otherwise ->
             catch (runHttpServer opts) $ \e -> do
