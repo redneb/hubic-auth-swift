@@ -6,6 +6,7 @@ module HttpServer
     ) where
 
 import Network.Wai.Handler.Warp (defaultSettings, setPort)
+import Network.Wai (modifyResponse, mapResponseHeaders)
 import Web.Scotty
 import Network.HTTP.Client (Manager, newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
@@ -29,8 +30,10 @@ import Text.Read (readMaybe)
 import Data.FileEmbed
 import Data.Default.Class
 import System.Random (randomIO)
+import Paths_hubic_auth_swift (version)
+import Data.Version (showVersion)
 import Data.Word (Word)
-import Data.Monoid (Monoid(..))
+import Data.Monoid (Monoid(..), (<>))
 
 import Util
 import HubiC
@@ -46,6 +49,8 @@ runHttpServer port = do
     cache <- newTVarIO mempty
     registrations <- newTVarIO (mempty :: Registrations)
     scottyOpts def {verbose = 0, settings = setPort port defaultSettings} $ do
+        middleware $ modifyResponse $ mapResponseHeaders $ \hdrs ->
+            serverHdr : filter ((/= "Server") . fst) hdrs
         get "/v1.0"      $ handleAuth man cache
         get "/auth/v1.0" $ handleAuth man cache
         get "/" $ do
@@ -105,6 +110,9 @@ runHttpServer port = do
                 ]
         notFound $
             html $ mconcat ["<div>There's nothing here</div><div>You may want to start from <a href=\"/\">here</a>.</div>"]
+  where
+    serverHdr =
+        ("Server", "hubic-auth-swift/" <> C8.pack (showVersion version))
 
 handleAuth :: Manager -> TVar Cache -> ActionM ()
 handleAuth man cache = do
