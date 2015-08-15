@@ -1,0 +1,22 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>Success!</title>
+		<style type="text/css">div {margin-top: 0.5em}</style>
+	</head>
+	<body>
+		<div>
+			<div>Registration completed successfully!</div>
+			<div>You can now use your hubiC account with any application that supports Swift v1 authentication by providing the following credentials:</div>
+			<div>Username: <input value="{{user}}" size="42" readonly="readonly"/></div>
+			<div>Password (key): <input value="{{key}}" size="96" readonly="readonly"/></div>
+			<div>Auth URL: <input value="{{auth_uri}}" size="32" readonly="readonly"/></div>
+			<div>Make sure that hubic-auth-swift is running whenever you use such an application.</div>
+		</div>
+		<div style="margin-top: 1.5em">
+			<div>For example, here's how you could list all the files in your account using the official python Swift command-line client:</div>
+			<pre>swift -U {{user}} -K {{key}} -A {{auth_uri}} list default --lh</pre>
+		</div>
+	</body>
+</html>

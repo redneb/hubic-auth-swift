@@ -1,0 +1,50 @@
+name:                hubic-auth-swift
+version:             0.1.0.0
+synopsis:            Swift v1 authentication for hubiC
+-- description:         
+homepage:            https://github.com/redneb/hubic-auth-swift
+license:             GPL-3
+license-file:        LICENSE
+author:              Marios Titas <rednebΑΤgmxDΟΤcom>
+maintainer:          Marios Titas <rednebΑΤgmxDΟΤcom>
+category:            Network
+build-type:          Simple
+cabal-version:       >=1.10
+
+extra-source-files:
+  html/*.html
+
+source-repository head
+  type: git
+  location: https://github.com/redneb/hubic-auth-swift.git
+
+flag static
+  description:         Build static binary
+  default:             False
+
+executable hubic-auth-swift
+  main-is:             Main.hs
+  other-modules:       Util, HubiC, HttpServer
+  build-depends:         base >=4.5 && <5
+                       , time >=1.5
+                       , bytestring >=0.9
+                       , base64-bytestring >=1
+                       , text >=1
+                       , stm >=2
+                       , random >=1
+                       , transformers >=0.3
+                       , unordered-containers >=0.2
+                       , scotty >=0.10
+                       , warp >=3
+                       , http-client >=0.4
+                       , http-client-tls >=0.2
+                       , http-types >=0.8
+                       , aeson >=0.9
+                       , hastache >=0.6
+                       , file-embed
+                       , data-default-class
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  if flag(static)
+    ld-options:        -static -pthread

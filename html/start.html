@@ -1,0 +1,28 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>Setup guide</title>
+		<style type="text/css">div {margin-top: 0.5em}</style>
+		<script type="text/javascript">
+			function main() {
+				document.getElementById("redirect_uri").value=document.URL;
+			}
+		</script>
+	</head>
+	<body onload="main()">
+		<div><form method="post">
+			<div>This guide will help setup hubic-auth-swift for use with your hubiC account.</div>
+			<div>To start, login to your hubiC account and click on the account menu button at the top right of your screen.</div>
+			<div>Then select <b>My account</b> → <b>Developers</b> → <b>Add an application</b>.</div>
+			<div>Enter your last name and use <input id="redirect_uri" name="redirect_uri" value="{{redirect_uri}}" length="32" readonly="readonly"/> as the redirection domain.</div>
+			<div>Click OK. The newly created application should appear on the list.</div>
+			<div>Locate the application in the list and click details.</div>
+			<div>Paste the client ID &amp; secret below:</div>
+			<div><label>Client ID: <input name="client_id" size="42"/></label></div>
+			<div><label>Secret Client: <input name="client_secret" size="64"/></label></div>
+			<div>After you click the next button below, you will be redirected to a hubiC page where you will be asked to authorize the application to access your hubiC account.</div>
+			<div><input type="submit" value="Next"/></div>
+		</form></div>
+	</body>
+</html>
