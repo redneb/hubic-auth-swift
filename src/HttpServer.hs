@@ -34,6 +34,7 @@ import System.Random (randomIO)
 import Paths_hubic_auth_swift (version)
 import Data.Version (showVersion)
 import Data.String
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 #if !MIN_VERSION_base(4,8,0)
 import Data.Word (Word)
@@ -85,7 +86,8 @@ runHttpServer opts = do
             html s
         get "/" $ do
             host <- headerReq "Host"
-            let redirect_uri = mconcat ["http://", host, "/"]
+            let redirect_uri =
+                    fromMaybe (mconcat ["http://", host, "/"]) (optURL opts)
             s <- hastacheStr defaultConfig tmplStart $
                 mkStrContext $ \"redirect_uri" -> MuVariable redirect_uri
             html s
