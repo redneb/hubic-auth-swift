@@ -28,7 +28,7 @@ defaultOptions :: Options
 defaultOptions = Options
     { optHelp = False
     , optPort = 8080
-    , optAddr = "*"
+    , optAddr = "127.0.0.1"
     , optCacheTTL = 30 * usecInMin
     , optURL = Nothing
     }
