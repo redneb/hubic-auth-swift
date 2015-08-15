@@ -12,6 +12,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 extra-source-files:
+  README.md
   html/*.html
 
 source-repository head
