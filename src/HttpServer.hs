@@ -8,7 +8,7 @@ module HttpServer
 
 import Network.Wai.Handler.Warp (defaultSettings, setPort)
 import Network.Wai (modifyResponse, mapResponseHeaders)
-import Web.Scotty
+import Web.Scotty hiding (Options)
 import Network.HTTP.Client (Manager, newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Types (urlEncode)
@@ -40,6 +40,7 @@ import Data.Monoid (Monoid(..))
 #endif
 
 import Util
+import Options (Options(..))
 import HubiC
 
 type Cache = Map.HashMap (ByteString, ByteString, ByteString)
@@ -47,12 +48,13 @@ type Cache = Map.HashMap (ByteString, ByteString, ByteString)
 
 type Registrations = Map.HashMap Word (ByteString, ByteString, ByteString)
 
-runHttpServer :: Int -> IO ()
-runHttpServer port = do
+runHttpServer :: Options -> IO ()
+runHttpServer opts = do
     man <- newManager tlsManagerSettings
     cache <- newTVarIO mempty
     registrations <- newTVarIO (mempty :: Registrations)
-    scottyOpts def {verbose = 0, settings = setPort port defaultSettings} $ do
+    let warpSettings = setPort (optPort opts) defaultSettings
+    scottyOpts def {verbose = 0, settings = warpSettings} $ do
         middleware $ modifyResponse $ mapResponseHeaders $ \hdrs ->
             serverHdr : filter ((/= "Server") . fst) hdrs
         get "/v1.0"      $ handleAuth man cache
