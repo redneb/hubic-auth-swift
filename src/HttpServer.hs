@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -32,8 +33,11 @@ import Data.Default.Class
 import System.Random (randomIO)
 import Paths_hubic_auth_swift (version)
 import Data.Version (showVersion)
+import Data.Monoid ((<>))
+#if !MIN_VERSION_base(4,8,0)
 import Data.Word (Word)
-import Data.Monoid (Monoid(..), (<>))
+import Data.Monoid (Monoid(..))
+#endif
 
 import Util
 import HubiC
