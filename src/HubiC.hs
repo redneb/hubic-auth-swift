@@ -1,24 +1,49 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module HubiC
-    ( getEndpoint
+    ( HubiCError(..)
+    , getEndpoint
     , getRefreshToken
     ) where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as C8
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.Aeson as A
-import qualified Data.HashMap.Strict as Map
+import Data.Aeson (FromJSON, withObject, (.:))
 import Network.HTTP.Client
 import Network.HTTP.Types.Header (ResponseHeaders)
 import Data.Time
 import Data.Monoid
+import Control.Exception
 
-import Util
+newtype HubiCError = HubiCError String deriving (Eq, Show)
+
+instance Exception HubiCError where
+#if MIN_VERSION_base(4,8,0)
+    displayException (HubiCError msg) = msg
+#endif
+
+hubiCError :: String -> IO a
+hubiCError = throwIO . HubiCError
+
+data GetCredentials = GetCredentials Text Text UTCTime
+
+instance FromJSON GetCredentials where
+    parseJSON v = flip (withObject "object") v $ \o ->
+        GetCredentials
+            <$> o .: "token"
+            <*> o .: "endpoint"
+            <*> timeP o
+      where
+        timeP o = do
+            s <- o .: "expires"
+            case parseTimeM True defaultTimeLocale "%FT%T%z" s of
+                Just t -> return t
+                Nothing -> fail $ "Invalid timestamp: " ++ s
 
 getEndpoint
     :: Manager
@@ -33,11 +58,7 @@ getEndpoint man client_id client_secret refresh_token = do
     let req = req0
             { requestHeaders = ("Authorization", auth) : requestHeaders req0
             }
-    (res, hdrs) <- httpJSON req man
-    let token = lookupObj "token" res
-        endpoint = lookupObj "endpoint" res
-        expires0 = lookupObj "expires" res
-    expires <- parseTimeM True defaultTimeLocale "%FT%T%z" expires0
+    (GetCredentials token endpoint expires, hdrs) <- httpJSON req man
     now <-
         case fmap C8.unpack (lookup "Date" hdrs)
                 >>= parseTimeM True defaultTimeLocale "%a, %d %b %Y %T %Z" of
@@ -47,6 +68,12 @@ getEndpoint man client_id client_secret refresh_token = do
                     (* 1000000) $ truncate $ diffUTCTime expires now
     return (token, endpoint, expires_in)
 
+newtype GetAccessToken = GetAccessToken ByteString
+
+instance FromJSON GetAccessToken where
+    parseJSON v = flip (withObject "object") v $ \o ->
+        GetAccessToken . T.encodeUtf8 <$> o .: "access_token"
+
 getAccessToken
     :: Manager
     -> ByteString
@@ -54,13 +81,19 @@ getAccessToken
     -> ByteString
     -> IO ByteString
 getAccessToken man client_id client_secret refresh_token = do
-    res <- getTokenGen man client_id client_secret body
-    return (T.encodeUtf8 $ lookupObj "access_token" res)
+    GetAccessToken res <- getTokenGen man client_id client_secret body
+    return res
   where
     body =
         [ ("refresh_token", refresh_token)
         , ("grant_type", "refresh_token")
         ]
+
+newtype GetRefreshToken = GetRefreshToken ByteString
+
+instance FromJSON GetRefreshToken where
+    parseJSON v = flip (withObject "object") v $ \o ->
+        GetRefreshToken . T.encodeUtf8 <$> o .: "refresh_token"
 
 getRefreshToken
     :: Manager
@@ -70,8 +103,8 @@ getRefreshToken
     -> ByteString
     -> IO ByteString
 getRefreshToken man client_id client_secret code redirect_uri = do
-    res <- getTokenGen man client_id client_secret body
-    return (T.encodeUtf8 $ lookupObj "refresh_token" res)
+    GetRefreshToken res <- getTokenGen man client_id client_secret body
+    return res
   where
     body =
         [ ("code", code)
@@ -80,11 +113,12 @@ getRefreshToken man client_id client_secret code redirect_uri = do
         ]
 
 getTokenGen
-    :: Manager
+    :: FromJSON a
+    => Manager
     -> ByteString
     -> ByteString
     -> [(ByteString, ByteString)]
-    -> IO A.Object
+    -> IO a
 getTokenGen man client_id client_secret body = do
     req0 <- parseUrl "https://api.hubic.com/oauth/token/"
     let req = urlEncodedBody body req0
@@ -95,27 +129,17 @@ getTokenGen man client_id client_secret body = do
   where
     auth = "Basic " <> B64.encode (mconcat [client_id, ":", client_secret])
 
-httpJSON :: Request -> Manager -> IO (A.Object, ResponseHeaders)
+httpJSON :: FromJSON a => Request -> Manager -> IO (a, ResponseHeaders)
 httpJSON req man = do
     resp <- httpLbs req man
     let ct = lookup "Content-Type" (responseHeaders resp)
     case ct of
-        Nothing -> errorIO "No Content-Type header found"
+        Nothing -> hubiCError "No Content-Type header found"
         Just s0 | s <- C8.takeWhile (/= ';') s0
                 , s == "application/json" ->
             return ()
         Just s ->
-            errorIO $ "Expected an application/json but got " ++ C8.unpack s
+            hubiCError $ "Expected an application/json but got " ++ C8.unpack s
     case A.decode (responseBody resp) of
         Just obj -> return (obj, responseHeaders resp)
-        Nothing -> errorIO "Response is not a valid JSON object"
-
-lookupObj :: A.FromJSON a => Text -> A.Object -> a
-lookupObj name obj =
-    case Map.lookup name obj of
-        Nothing -> error $ "JSON object does not contain the \""
-                        ++ T.unpack name ++ "\" key"
-        Just val0 ->
-            case A.fromJSON val0 of
-                A.Success val -> val
-                A.Error msg -> error $ "Could not decode JSON value: " ++ msg
+        Nothing -> hubiCError "Response is not a valid JSON object"
