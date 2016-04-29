@@ -3,7 +3,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HubicAuthServer
-    ( runHubicAuthServer
+    ( HubicAuthServerError(..)
+    , runHubicAuthServer
     ) where
 
 import Network.Wai.Handler.Warp (defaultSettings, setPort, setHost)
@@ -41,7 +42,6 @@ import Data.Word (Word)
 import Data.Monoid (Monoid(..))
 #endif
 
-import Util
 import Options (Options(..))
 import Hubic
 
@@ -49,6 +49,16 @@ type Cache = Map.HashMap (ByteString, ByteString, ByteString)
                          (Maybe (Text, Text))
 
 type Registrations = Map.HashMap Word (ByteString, ByteString, ByteString)
+
+newtype HubicAuthServerError = HubicAuthServerError String deriving (Eq, Show)
+
+instance Exception HubicAuthServerError where
+#if MIN_VERSION_base(4,8,0)
+    displayException (HubicAuthServerError msg) = msg
+#endif
+
+hubicASError :: MonadIO m => String -> m a
+hubicASError = liftIO . throwIO . HubicAuthServerError
 
 runHubicAuthServer :: Options -> IO ()
 runHubicAuthServer opts = do
@@ -68,12 +78,13 @@ runHubicAuthServer opts = do
                 state <- param "state"
                 case readMaybe state of
                     Just val -> return val
-                    Nothing -> errorIO $ state ++ " is not a valid integer"
+                    Nothing -> hubicASError $
+                        state ++ " is not a valid integer"
             (client_id, client_secret, redirect_uri) <- do
                 regs <- liftIO $ readTVarIO registrations
                 case Map.lookup sessionId regs of
                     Just t -> return t
-                    Nothing -> errorIO "Could not find registration data"
+                    Nothing -> hubicASError "Could not find registration data"
             refresh_token <- liftIO $ getRefreshToken man
                 client_id client_secret code redirect_uri
             let muCtx "user" = MuVariable $ T.decodeLatin1 $
@@ -96,11 +107,11 @@ runHubicAuthServer opts = do
             client_secret <- param "client_secret"
             redirect_uri  <- param "redirect_uri"
             when (TL.null client_id) $
-                errorIO "client_id must not be empty"
+                hubicASError "client_id must not be empty"
             when (TL.null client_secret) $
-                errorIO "client_secret must not be empty"
+                hubicASError "client_secret must not be empty"
             when (TL.null redirect_uri ) $
-                errorIO "redirect_uri must not be empty"
+                hubicASError "redirect_uri must not be empty"
             sessionId <- liftIO randomIO
             liftIO $ atomically $
                 modifyTVar registrations $ Map.insert sessionId
@@ -129,7 +140,7 @@ handleAuth man cache cacheTTL = do
     user <- headerBS "X-Auth-User"
     refresh_token <- headerBS "X-Auth-Key"
     let (client_id, client_secret0) = C8.break (== ':') user
-    when (C8.null client_secret0) $ error "Invalid username format"
+    when (C8.null client_secret0) $ hubicASError "Invalid username format"
     let client_secret = C8.drop 1 client_secret0
     let triplet = (client_id, client_secret, refresh_token)
     r <- liftIO $ atomically $ do
@@ -167,7 +178,7 @@ headerReq :: TL.Text -> ActionM TL.Text
 headerReq name = do
     r <- header name
     case r of
-        Nothing -> errorIO $ "Header " ++ TL.unpack name ++ " not found"
+        Nothing -> hubicASError $ "Header " ++ TL.unpack name ++ " not found"
         Just s -> return s
 
 urlEncodeTL :: TL.Text -> TL.Text
