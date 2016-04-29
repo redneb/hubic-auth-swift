@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
 
-module HubiC
-    ( HubiCError(..)
+module Hubic
+    ( HubicError(..)
     , getEndpoint
     , getRefreshToken
     ) where
@@ -20,15 +20,15 @@ import Data.Time
 import Data.Monoid
 import Control.Exception
 
-newtype HubiCError = HubiCError String deriving (Eq, Show)
+newtype HubicError = HubicError String deriving (Eq, Show)
 
-instance Exception HubiCError where
+instance Exception HubicError where
 #if MIN_VERSION_base(4,8,0)
-    displayException (HubiCError msg) = msg
+    displayException (HubicError msg) = msg
 #endif
 
-hubiCError :: String -> IO a
-hubiCError = throwIO . HubiCError
+hubicError :: String -> IO a
+hubicError = throwIO . HubicError
 
 data GetCredentials = GetCredentials Text Text UTCTime
 
@@ -134,12 +134,12 @@ httpJSON req man = do
     resp <- httpLbs req man
     let ct = lookup "Content-Type" (responseHeaders resp)
     case ct of
-        Nothing -> hubiCError "No Content-Type header found"
+        Nothing -> hubicError "No Content-Type header found"
         Just s0 | s <- C8.takeWhile (/= ';') s0
                 , s == "application/json" ->
             return ()
         Just s ->
-            hubiCError $ "Expected an application/json but got " ++ C8.unpack s
+            hubicError $ "Expected an application/json but got " ++ C8.unpack s
     case A.decode (responseBody resp) of
         Just obj -> return (obj, responseHeaders resp)
-        Nothing -> hubiCError "Response is not a valid JSON object"
+        Nothing -> hubicError "Response is not a valid JSON object"

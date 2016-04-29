@@ -8,7 +8,7 @@ import Control.Exception
 import Control.DeepSeq (force)
 
 import Options
-import HttpServer
+import HubicAuthServer
 
 main :: IO ()
 main = do
@@ -26,6 +26,6 @@ main = do
             let usage1 = "Usage: " ++ progName ++ " [OPTION]...\n"
             putStr $ usageInfo usage1 optDescrs
         | otherwise ->
-            catch (runHttpServer opts) $ \e -> do
+            catch (runHubicAuthServer opts) $ \e -> do
                 hPutStrLn stderr $ show (e :: SomeException)
                 exitFailure

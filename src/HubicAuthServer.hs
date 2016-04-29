@@ -2,8 +2,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module HttpServer
-    ( runHttpServer
+module HubicAuthServer
+    ( runHubicAuthServer
     ) where
 
 import Network.Wai.Handler.Warp (defaultSettings, setPort, setHost)
@@ -43,15 +43,15 @@ import Data.Monoid (Monoid(..))
 
 import Util
 import Options (Options(..))
-import HubiC
+import Hubic
 
 type Cache = Map.HashMap (ByteString, ByteString, ByteString)
                          (Maybe (Text, Text))
 
 type Registrations = Map.HashMap Word (ByteString, ByteString, ByteString)
 
-runHttpServer :: Options -> IO ()
-runHttpServer opts = do
+runHubicAuthServer :: Options -> IO ()
+runHubicAuthServer opts = do
     man <- newManager tlsManagerSettings
     cache <- newTVarIO mempty
     registrations <- newTVarIO (mempty :: Registrations)
