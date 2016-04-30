@@ -3,7 +3,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HubicAuthServer
-    ( HubicAuthServerError(..)
+    ( HubicAuthServerOpts(..)
+    , HubicAuthServerError(..)
     , runHubicAuthServer
     ) where
 
@@ -42,13 +43,29 @@ import Data.Word (Word)
 import Data.Monoid (Monoid(..))
 #endif
 
-import Options (Options(..))
 import Hubic
 
 type Cache = Map.HashMap (ByteString, ByteString, ByteString)
                          (Maybe (Text, Text))
 
 type Registrations = Map.HashMap Word (ByteString, ByteString, ByteString)
+
+data HubicAuthServerOpts = HubicAuthServerOpts
+    { optPort :: Int
+    , optAddr :: String
+    , optCacheTTL :: Int -- in microseconds
+    , optURL :: Maybe TL.Text -- must end with a /
+    }
+
+instance Default HubicAuthServerOpts where
+    def = HubicAuthServerOpts
+        { optPort = 8080
+        , optAddr = "127.0.0.1"
+        , optCacheTTL = 30 * usecInMin
+        , optURL = Nothing
+        }
+      where
+        usecInMin = 60 * 1000000
 
 newtype HubicAuthServerError = HubicAuthServerError String deriving (Eq, Show)
 
@@ -60,7 +77,7 @@ instance Exception HubicAuthServerError where
 hubicASError :: MonadIO m => String -> m a
 hubicASError = liftIO . throwIO . HubicAuthServerError
 
-runHubicAuthServer :: Options -> IO ()
+runHubicAuthServer :: HubicAuthServerOpts -> IO ()
 runHubicAuthServer opts = do
     man <- newManager tlsManagerSettings
     cache <- newTVarIO mempty
