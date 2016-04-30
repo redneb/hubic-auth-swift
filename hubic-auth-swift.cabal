@@ -25,9 +25,9 @@ flag static
   description:         Build static binary
   default:             False
 
-executable hubic-auth-swift
-  main-is:             Main.hs
-  other-modules:       Hubic, HubicAuthServer
+library
+  exposed-modules:     HubicAuthServer
+  other-modules:       Hubic, Paths_hubic_auth_swift
   build-depends:         base >=4.5 && <5
                        , time >=1.5
                        , bytestring >=0.9
@@ -48,6 +48,15 @@ executable hubic-auth-swift
                        , file-embed
                        , data-default-class
   hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+executable hubic-auth-swift
+  main-is:             Main.hs
+  build-depends:         base >=4.5 && <5
+                       , hubic-auth-swift
+                       , text
+                       , data-default-class
   default-language:    Haskell2010
   ghc-options:         -Wall
   if flag(static)
