@@ -8,7 +8,7 @@ module HubicAuthServer
     , runHubicAuthServer
     ) where
 
-import Network.Wai.Handler.Warp (defaultSettings, setPort, setHost)
+import Network.Wai.Handler.Warp (defaultSettings, setPort, setHost, setBeforeMainLoop)
 import Network.Wai (modifyResponse, mapResponseHeaders)
 import Web.Scotty hiding (Options)
 import Network.HTTP.Client (Manager, newManager)
@@ -55,6 +55,7 @@ data HubicAuthServerOpts = HubicAuthServerOpts
     , optAddr :: String
     , optCacheTTL :: Int -- in microseconds
     , optURL :: Maybe TL.Text -- must end with a /
+    , optOnReady :: IO ()
     }
 
 instance Default HubicAuthServerOpts where
@@ -63,6 +64,7 @@ instance Default HubicAuthServerOpts where
         , optAddr = "127.0.0.1"
         , optCacheTTL = 30 * usecInMin
         , optURL = Nothing
+        , optOnReady = return ()
         }
       where
         usecInMin = 60 * 1000000
@@ -82,8 +84,11 @@ runHubicAuthServer opts = do
     man <- newManager tlsManagerSettings
     cache <- newTVarIO mempty
     registrations <- newTVarIO (mempty :: Registrations)
-    let warpSettings = setHost (fromString $ optAddr opts) $
-            setPort (optPort opts) defaultSettings
+    let warpSettings =
+            setHost (fromString $ optAddr opts) $
+            setPort (optPort opts) $
+            setBeforeMainLoop (optOnReady opts)
+                defaultSettings
     scottyOpts def {verbose = 0, settings = warpSettings} $ do
         middleware $ modifyResponse $ mapResponseHeaders $ \hdrs ->
             serverHdr : filter ((/= "Server") . fst) hdrs
