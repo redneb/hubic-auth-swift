@@ -8,7 +8,9 @@ module HubicAuthServer
     , runHubicAuthServer
     ) where
 
-import Network.Wai.Handler.Warp (defaultSettings, setPort, setHost, setBeforeMainLoop)
+import Network.Wai.Handler.Warp (defaultSettings, setPort, setHost,
+                                 setBeforeMainLoop, setOnException,
+                                 defaultShouldDisplayException)
 import Network.Wai (modifyResponse, mapResponseHeaders)
 import Web.Scotty hiding (Options)
 import Network.HTTP.Client (Manager, newManager)
@@ -23,10 +25,13 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C8
 import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import qualified Data.HashMap.Strict as Map
+import System.IO (stderr)
 import Text.Hastache (hastacheStr, MuType(MuVariable), defaultConfig)
 import Text.Hastache.Context (mkStrContext)
 import Text.Read (readMaybe)
@@ -56,6 +61,7 @@ data HubicAuthServerOpts = HubicAuthServerOpts
     , optCacheTTL :: Int -- in microseconds
     , optURL :: Maybe TL.Text -- must end with a /
     , optOnReady :: IO ()
+    , optErrorLogger :: Text -> IO ()
     }
 
 instance Default HubicAuthServerOpts where
@@ -65,6 +71,7 @@ instance Default HubicAuthServerOpts where
         , optCacheTTL = 30 * usecInMin
         , optURL = Nothing
         , optOnReady = return ()
+        , optErrorLogger = T.hPutStrLn stderr
         }
       where
         usecInMin = 60 * 1000000
@@ -87,7 +94,8 @@ runHubicAuthServer opts = do
     let warpSettings =
             setHost (fromString $ optAddr opts) $
             setPort (optPort opts) $
-            setBeforeMainLoop (optOnReady opts)
+            setBeforeMainLoop (optOnReady opts) $
+            setOnException onExceptionHandler $
                 defaultSettings
     scottyOpts def {verbose = 0, settings = warpSettings} $ do
         middleware $ modifyResponse $ mapResponseHeaders $ \hdrs ->
@@ -156,6 +164,9 @@ runHubicAuthServer opts = do
   where
     serverHdr =
         ("Server", "hubic-auth-swift/" <> C8.pack (showVersion version))
+    onExceptionHandler _ e =
+        when (defaultShouldDisplayException e)
+            $ optErrorLogger opts $ T.pack $ displayException e
 
 handleAuth :: Manager -> TVar Cache -> Int -> ActionM ()
 handleAuth man cache cacheTTL = do
@@ -212,3 +223,8 @@ tmplStart = T.decodeUtf8 $(embedFile "html/start.html")
 
 tmplSuccess :: Text
 tmplSuccess = T.decodeUtf8 $(embedFile "html/success.html")
+
+#if !MIN_VERSION_base(4,8,0)
+displayException :: Exception e => e -> String
+displayException = show
+#endif
