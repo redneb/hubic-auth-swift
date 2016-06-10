@@ -1,6 +1,6 @@
 # hubic-auth-swift
 
-[hubiC](https://hubic.com/) is a file hosting service that supports accessing the files via the OpenStack [Swift](http://docs.openstack.org/developer/swift/) API. Unfortunately, hubiC does not support the standard Swift authentication mechanism and instead uses one based on OAuth 2.0. Consequently, it is not possible to use most of Swift client applications with hubiC. `hubic-auth-swift` is a simple solution that bridges that gap by offering a stand-alone executable that enables applications to access a hubiC account via the standard Swift v1 authentication method.
+[hubiC](https://hubic.com/) is a file hosting service that supports accessing the files via the OpenStack [Swift](http://docs.openstack.org/developer/swift/) API. Unfortunately, hubiC does not support the standard Swift authentication mechanism and instead uses one based on OAuth 2.0. Consequently, it is not possible to use most of Swift client applications with hubiC. `hubic-auth-swift` is a simple solution to that problem: it provides a single stand-alone executable that acts as an authentication gateway, enabling applications to access a hubiC account via the standard Swift v1 authentication method.
 
 __DISCLAIMER__: I am not affiliated with hubiC or OVH. This is a tool I developed for my personal use and is not officially supported by hubiC.
 
@@ -8,7 +8,7 @@ __DISCLAIMER__: I am not affiliated with hubiC or OVH. This is a tool I develope
 
 1. [Download](https://github.com/redneb/hubic-auth-swift/releases) the executable for your OS (precompiled binaries for Linux, Mac OS X, and Windows are provided).
 2. Execute it.
-3. Open your favorite browser and go to [http://localhost:8080/](http://localhost:8080/).
+3. Visit [http://localhost:8080/](http://localhost:8080/) with your favorite browser.
 4. Follow the instructions.
 
 ### Features
