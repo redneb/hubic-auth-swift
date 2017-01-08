@@ -54,7 +54,7 @@ getEndpoint
 getEndpoint man client_id client_secret refresh_token = do
     access_token <- getAccessToken man client_id client_secret refresh_token
     let auth = "Bearer " <> access_token
-    req0 <- parseUrl "https://api.hubic.com/1.0/account/credentials"
+    req0 <- parseUrlThrow "https://api.hubic.com/1.0/account/credentials"
     let req = req0
             { requestHeaders = ("Authorization", auth) : requestHeaders req0
             }
@@ -120,7 +120,7 @@ getTokenGen
     -> [(ByteString, ByteString)]
     -> IO a
 getTokenGen man client_id client_secret body = do
-    req0 <- parseUrl "https://api.hubic.com/oauth/token/"
+    req0 <- parseUrlThrow "https://api.hubic.com/oauth/token/"
     let req = urlEncodedBody body req0
             { requestHeaders = ("Authorization", auth) : requestHeaders req0
             }
